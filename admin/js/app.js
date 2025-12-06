@@ -1,4 +1,4 @@
-const API_URL = 'https://autustrade-schedule-admin-side.onrender.com';
+const API_URL = 'https://autustrade-schedule-admin-side.onrender.com/api/appointments';
 
 const modal = document.getElementById('appointmentModal');
 const openModalBtn = document.getElementById('addAppointmentBtn');
