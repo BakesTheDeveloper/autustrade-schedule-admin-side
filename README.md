@@ -1,6 +1,6 @@
 # Autus Trades Appointment System
 
-A modern, responsive appointment booking system with separate client and admin interfaces. This system allows clients to book appointments and administrators to manage them efficiently.
+A modern, responsive appointment booking system with separate client and admin interfaces. This system allows clients to book appointments and administrators to manage them efficiently with real-time synchronization.
 
 ## Features
 
@@ -13,6 +13,7 @@ A modern, responsive appointment booking system with separate client and admin i
 
 ### Admin Dashboard
 - Comprehensive appointment management
+- Real-time appointment updates with refresh button
 - Calendar view of appointments
 - Client management
 - Statistics and reporting
@@ -21,7 +22,8 @@ A modern, responsive appointment booking system with separate client and admin i
 ## Tech Stack
 
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Storage**: LocalStorage (for demo purposes)
+- **Backend**: Node.js, Express
+- **Storage**: JSON file storage (easily upgradeable to database)
 - **Icons**: Font Awesome
 - **Fonts**: Google Fonts (Inter)
 
@@ -29,6 +31,9 @@ A modern, responsive appointment booking system with separate client and admin i
 
 ```
 appointment-system/
+├── server.js              # Backend API server
+├── package.json           # Node.js dependencies
+├── appointments.json      # Data storage (auto-created)
 ├── admin/                 # Admin dashboard files
 │   ├── css/
 │   │   └── styles.css     # Admin styles
@@ -42,16 +47,53 @@ appointment-system/
 │   │   └── app.js        # Client JavaScript
 │   └── index.html         # Client booking page
 ├── README.md             # This file
-└── SETUP.md              # Setup and installation guide
+├── SETUP.md              # Setup and installation guide
+└── SERVER_SETUP.md       # Server setup instructions
 ```
 
-## Getting Started
+## Quick Start
 
-1. Clone the repository
-2. Open `client/index.html` in a web browser to access the booking system
-3. Open `admin/index.html` to access the admin dashboard
+### 1. Install Dependencies
 
-For detailed setup instructions, see [SETUP.md](SETUP.md).
+```bash
+npm install
+```
+
+### 2. Start the Server
+
+```bash
+npm start
+```
+
+### 3. Access the Application
+
+- **Client Booking:** http://localhost:3000/client/index.html
+- **Admin Dashboard:** http://localhost:3000/admin/index.html
+
+For detailed setup instructions, see [SERVER_SETUP.md](SERVER_SETUP.md).
+
+## How It Works
+
+1. **Client books appointment** → Data sent to server
+2. **Server stores appointment** → Saved in appointments.json
+3. **Admin clicks Refresh** → Loads all appointments from server
+4. **Real-time sync** → New appointments appear immediately after refresh
+
+## Key Features
+
+### Client Side
+- Step-by-step booking wizard
+- Date and time slot selection
+- Form validation
+- Confirmation page with booking details
+
+### Admin Side
+- View all appointments in a table
+- **Refresh button** to load new appointments
+- Edit existing appointments
+- Delete appointments
+- Status management (Pending, Confirmed, Cancelled, Completed)
+- Statistics dashboard
 
 ## Browser Support
 

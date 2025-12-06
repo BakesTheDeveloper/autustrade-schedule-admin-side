@@ -1,38 +1,19 @@
-// DOM Elements
-const menuToggle = document.getElementById('menuToggle');
-const sidebar = document.getElementById('sidebar');
-const mainContent = document.querySelector('.main-content');
+const API_URL = 'http://localhost:3000/api/appointments';
 
-// Toggle sidebar on mobile
-if (menuToggle) {
-    menuToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('show');
-    });
-}
-
-// Close sidebar when clicking outside on mobile
-document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 1024 && !sidebar.contains(e.target) && e.target !== menuToggle) {
-        sidebar.classList.remove('show');
-    }
-});
-
-// Modal functionality
 const modal = document.getElementById('appointmentModal');
 const openModalBtn = document.getElementById('addAppointmentBtn');
 const closeModalBtn = document.getElementById('closeModal');
+const cancelBtn = document.getElementById('cancelAppointment');
 const saveAppointmentBtn = document.getElementById('saveAppointment');
 const appointmentForm = document.getElementById('appointmentForm');
 let isEditMode = false;
 let currentAppointmentId = null;
 
-// Open modal
 function openModal() {
-    modal.classList.add('show');    
+    modal.classList.add('show');
     document.body.style.overflow = 'hidden';
 }
 
-// Close modal
 function closeModal() {
     modal.classList.remove('show');
     appointmentForm.reset();
@@ -41,268 +22,186 @@ function closeModal() {
     document.body.style.overflow = '';
 }
 
-// Event listeners for modal
-if (openModalBtn) {
-    openModalBtn.addEventListener('click', openModal);
-}
+if (openModalBtn) openModalBtn.addEventListener('click', openModal);
+if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
-if (closeModalBtn) {
-    closeModalBtn.addEventListener('click', closeModal);
-}
-
-// Close modal when clicking outside
 window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-        closeModal();
-    }
+    if (e.target === modal) closeModal();
 });
 
-// Format date for display
-function formatDate(dateString) {
-    const options = { 
-        year: 'numeric', 
+function formatDateTime(date, time) {
+    const dateObj = new Date(`${date}T${time}`);
+    return dateObj.toLocaleString('en-US', { 
         month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+        day: 'numeric', 
+        year: 'numeric',
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
 }
 
-// Get status class based on status value
-function getStatusClass(status) {
-    switch (status.toLowerCase()) {
-        case 'pending':
-            return 'status-pending';
-        case 'confirmed':
-            return 'status-confirmed';
-        case 'cancelled':
-            return 'status-cancelled';
-        default:
-            return '';
+function getStatusBadge(status) {
+    const badges = {
+        pending: '<span class="badge badge-warning">Pending</span>',
+        confirmed: '<span class="badge badge-success">Confirmed</span>',
+        cancelled: '<span class="badge badge-danger">Cancelled</span>',
+        completed: '<span class="badge badge-info">Completed</span>'
+    };
+    return badges[status] || badges.pending;
+}
+
+async function loadAppointments() {
+    try {
+        const response = await fetch(API_URL);
+        const appointments = await response.json();
+        renderAppointments(appointments);
+        updateStats(appointments);
+    } catch (error) {
+        console.error('Error loading appointments:', error);
+        alert('Failed to load appointments. Make sure the server is running.');
     }
 }
 
-// Show notification
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        <span>${message}</span>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Remove notification after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'fadeOut 0.3s ease-out';
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 3000);
-}
-
-// Update statistics
-function updateStats() {
-    const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-    
-    document.getElementById('totalAppointments').textContent = appointments.length;
-    document.getElementById('pendingAppointments').textContent = 
-        appointments.filter(a => a.status === 'pending').length;
-    document.getElementById('confirmedAppointments').textContent = 
-        appointments.filter(a => a.status === 'confirmed').length;
-    document.getElementById('cancelledAppointments').textContent = 
-        appointments.filter(a => a.status === 'cancelled').length;
-}
-
-// Render appointments table
-function renderAppointments() {
-    const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-    const tbody = document.querySelector('#appointmentsTable tbody');
-    
+function renderAppointments(appointments) {
+    const tbody = document.getElementById('appointmentsTableBody');
     if (!tbody) return;
     
     tbody.innerHTML = '';
     
     if (appointments.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-4 text-gray-500">
-                    No appointments found. Click "Add Appointment" to create one.
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No appointments found</td></tr>';
         return;
     }
     
-    // Sort appointments by date (newest first)
-    const sortedAppointments = [...appointments].sort((a, b) => 
-        new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time)
-    );
+    appointments.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
     
-    sortedAppointments.forEach(appointment => {
+    appointments.forEach(apt => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${appointment.name}</td>
-            <td>${appointment.email}</td>
-            <td>${appointment.phone}</td>
-            <td>${formatDate(appointment.date + 'T' + appointment.time)}</td>
-            <td>${appointment.type}</td>
-            <td><span class="status ${getStatusClass(appointment.status)}">${appointment.status}</span></td>
-            <td class="text-right">
-                <button class="btn btn-edit btn-sm" onclick="editAppointment('${appointment.id}')">
+            <td>${apt.name}</td>
+            <td>${apt.type}</td>
+            <td>${formatDateTime(apt.date, apt.time)}</td>
+            <td>${apt.email}<br><small>${apt.phone}</small></td>
+            <td>${getStatusBadge(apt.status)}</td>
+            <td>
+                <button class="btn-icon" onclick="editAppointment('${apt.id}')" title="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-delete btn-sm" onclick="deleteAppointment('${appointment.id}')">
+                <button class="btn-icon" onclick="deleteAppointment('${apt.id}')" title="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
         `;
         tbody.appendChild(tr);
     });
-    
-    // Update statistics
-    updateStats();
 }
 
-// Edit appointment
-function editAppointment(id) {
-    const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-    const appointment = appointments.find(a => a.id === id);
-    
-    if (!appointment) {
-        showNotification('Appointment not found', 'error');
-        return;
-    }
-    
-    // Set form values
-    document.getElementById('name').value = appointment.name || '';
-    document.getElementById('email').value = appointment.email || '';
-    document.getElementById('phone').value = appointment.phone || '';
-    document.getElementById('date').value = appointment.date || '';
-    document.getElementById('time').value = appointment.time || '';
-    document.getElementById('type').value = appointment.type || 'consultation';
-    document.getElementById('status').value = appointment.status || 'pending';
-    document.getElementById('notes').value = appointment.notes || '';
-    
-    // Set edit mode
-    isEditMode = true;
-    currentAppointmentId = id;
-    
-    // Update modal title
-    document.querySelector('.modal-title').textContent = 'Edit Appointment';
-    
-    // Open modal
-    openModal();
-}
-
-// Delete appointment
-function deleteAppointment(id) {
-    if (!confirm('Are you sure you want to delete this appointment?')) {
-        return;
-    }
-    
-    const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-    const updatedAppointments = appointments.filter(a => a.id !== id);
-    
-    localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
-    
-    showNotification('Appointment deleted successfully');
-    renderAppointments();
-}
-
-// Save appointment (add or update)
-function saveAppointment(e) {
-    e.preventDefault();
-    
-    // Get form values
-    const formData = new FormData(appointmentForm);
-    const appointmentData = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        date: formData.get('date'),
-        time: formData.get('time'),
-        type: formData.get('type'),
-        status: formData.get('status'),
-        notes: formData.get('notes'),
-        createdAt: new Date().toISOString(),
-        id: isEditMode ? currentAppointmentId : Date.now().toString()
+function updateStats(appointments) {
+    const stats = {
+        total: appointments.length,
+        pending: appointments.filter(a => a.status === 'pending').length,
+        confirmed: appointments.filter(a => a.status === 'confirmed').length,
+        cancelled: appointments.filter(a => a.status === 'cancelled').length
     };
     
-    // Basic validation
-    if (!appointmentData.name || !appointmentData.email || !appointmentData.phone || 
-        !appointmentData.date || !appointmentData.time) {
-        showNotification('Please fill in all required fields', 'error');
-        return;
+    const statCards = document.querySelectorAll('.stat-card .stat-info h3');
+    if (statCards.length >= 4) {
+        statCards[0].textContent = stats.total;
+        statCards[1].textContent = stats.confirmed;
+        statCards[2].textContent = stats.pending;
+        statCards[3].textContent = stats.cancelled;
     }
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(appointmentData.email)) {
-        showNotification('Please enter a valid email address', 'error');
-        return;
-    }
-    
-    // Save to localStorage
-    const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-    
-    if (isEditMode) {
-        // Update existing appointment
-        const index = appointments.findIndex(a => a.id === currentAppointmentId);
-        if (index !== -1) {
-            appointments[index] = appointmentData;
-        }
-    } else {
-        // Add new appointment
-        appointments.push(appointmentData);
-    }
-    
-    localStorage.setItem('appointments', JSON.stringify(appointments));
-    
-    // Show success message
-    showNotification(`Appointment ${isEditMode ? 'updated' : 'created'} successfully`);
-    
-    // Close modal and refresh the list
-    closeModal();
-    renderAppointments();
 }
 
-// Initialize the app
+async function editAppointment(id) {
+    try {
+        const response = await fetch(API_URL);
+        const appointments = await response.json();
+        const apt = appointments.find(a => a.id === id);
+        
+        if (!apt) {
+            alert('Appointment not found');
+            return;
+        }
+        
+        document.getElementById('clientName').value = apt.name;
+        document.getElementById('appointmentType').value = apt.type;
+        document.getElementById('appointmentDate').value = apt.date;
+        document.getElementById('appointmentTime').value = apt.time;
+        document.getElementById('clientEmail').value = apt.email;
+        document.getElementById('clientPhone').value = apt.phone;
+        document.getElementById('appointmentStatus').value = apt.status;
+        document.getElementById('appointmentNotes').value = apt.notes || '';
+        
+        isEditMode = true;
+        currentAppointmentId = id;
+        document.querySelector('.modal-title').textContent = 'Edit Appointment';
+        openModal();
+    } catch (error) {
+        console.error('Error loading appointment:', error);
+        alert('Failed to load appointment');
+    }
+}
+
+async function deleteAppointment(id) {
+    if (!confirm('Delete this appointment?')) return;
+    
+    try {
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        loadAppointments();
+    } catch (error) {
+        console.error('Error deleting appointment:', error);
+        alert('Failed to delete appointment');
+    }
+}
+
+if (saveAppointmentBtn) {
+    saveAppointmentBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const data = {
+            name: document.getElementById('clientName').value,
+            type: document.getElementById('appointmentType').value,
+            date: document.getElementById('appointmentDate').value,
+            time: document.getElementById('appointmentTime').value,
+            email: document.getElementById('clientEmail').value,
+            phone: document.getElementById('clientPhone').value,
+            status: document.getElementById('appointmentStatus').value,
+            notes: document.getElementById('appointmentNotes').value
+        };
+        
+        if (!data.name || !data.type || !data.date || !data.time || !data.email || !data.phone) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        try {
+            const url = isEditMode ? `${API_URL}/${currentAppointmentId}` : API_URL;
+            const method = isEditMode ? 'PUT' : 'POST';
+            
+            await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            closeModal();
+            loadAppointments();
+        } catch (error) {
+            console.error('Error saving appointment:', error);
+            alert('Failed to save appointment');
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize date picker with min date as today
     const today = new Date().toISOString().split('T')[0];
-    const dateInput = document.getElementById('date');
-    if (dateInput) {
-        dateInput.min = today;
-    }
+    const dateInput = document.getElementById('appointmentDate');
+    if (dateInput) dateInput.min = today;
     
-    // Set default time to next hour
-    const timeInput = document.getElementById('time');
-    if (timeInput) {
-        const now = new Date();
-        const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
-        timeInput.value = `${String(nextHour.getHours()).padStart(2, '0')}:${String(nextHour.getMinutes()).padStart(2, '0')}`;
-    }
-    
-    // Set default status to pending
-    const statusInput = document.getElementById('status');
-    if (statusInput) {
-        statusInput.value = 'pending';
-    }
-    
-    // Set default type to consultation
-    const typeInput = document.getElementById('type');
-    if (typeInput) {
-        typeInput.value = 'consultation';
-    }
-    
-    // Add event listener for form submission
-    if (appointmentForm) {
-        appointmentForm.addEventListener('submit', saveAppointment);
-    }
-    
-    // Initial render
-    renderAppointments();
+    loadAppointments();
 });
+
+window.editAppointment = editAppointment;
+window.deleteAppointment = deleteAppointment;

@@ -155,8 +155,7 @@ function setupNavigation() {
 }
 
 // Handle form submission
-function submitAppointment() {
-    // Check if all required fields are present
+async function submitAppointment() {
     if (!appointmentType || !appointmentDate || !selectedTimeSlot || !nameInput || !emailInput || !phoneInput) {
         console.error('Required form elements not found');
         return;
@@ -170,50 +169,51 @@ function submitAppointment() {
         email: emailInput.value,
         phone: phoneInput.value,
         notes: notesInput ? notesInput.value : '',
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        id: Date.now().toString() // Unique ID as string for consistency
+        status: 'pending'
     };
     
     try {
-        // Save to localStorage
-        const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-        appointments.push(appointmentData);
-        localStorage.setItem('appointments', JSON.stringify(appointments));
+        const response = await fetch('http://localhost:3000/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appointmentData)
+        });
         
-        // Show success message with appointment details
+        if (!response.ok) throw new Error('Failed to book appointment');
+        
+        const savedAppointment = await response.json();
+        
         const confirmationDetails = document.getElementById('confirmation-details');
         if (confirmationDetails) {
             confirmationDetails.innerHTML = `
                 <div class="confirmation-detail">
                     <span class="detail-label">Type:</span>
-                    <span class="detail-value">${appointmentData.type}</span>
+                    <span class="detail-value">${savedAppointment.type}</span>
                 </div>
                 <div class="confirmation-detail">
                     <span class="detail-label">Date:</span>
-                    <span class="detail-value">${new Date(appointmentData.date).toLocaleDateString()}</span>
+                    <span class="detail-value">${new Date(savedAppointment.date).toLocaleDateString()}</span>
                 </div>
                 <div class="confirmation-detail">
                     <span class="detail-label">Time:</span>
-                    <span class="detail-value">${appointmentData.time}</span>
+                    <span class="detail-value">${savedAppointment.time}</span>
                 </div>
                 <div class="confirmation-detail">
                     <span class="detail-label">Name:</span>
-                    <span class="detail-value">${appointmentData.name}</span>
+                    <span class="detail-value">${savedAppointment.name}</span>
                 </div>
                 <div class="confirmation-detail">
                     <span class="detail-label">Email:</span>
-                    <span class="detail-value">${appointmentData.email}</span>
+                    <span class="detail-value">${savedAppointment.email}</span>
                 </div>
-                ${appointmentData.notes ? `
+                ${savedAppointment.notes ? `
                 <div class="confirmation-detail">
                     <span class="detail-label">Notes:</span>
-                    <span class="detail-value">${appointmentData.notes}</span>
+                    <span class="detail-value">${savedAppointment.notes}</span>
                 </div>` : ''}
             `;
         }
         
-        // Move to confirmation step
         const step2 = document.getElementById('step-2');
         const step3 = document.getElementById('step-3');
         if (step2 && step3) {
@@ -222,7 +222,6 @@ function submitAppointment() {
             updateStepIndicator(3);
         }
         
-        // Reset form for next booking
         resetForm();
         
     } catch (error) {
