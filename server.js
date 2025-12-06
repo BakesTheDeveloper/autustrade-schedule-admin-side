@@ -9,10 +9,7 @@ const DATA_FILE = path.join(__dirname, 'appointments.json');
 
 app.use(cors());
 app.use(express.json());
-
-// Serve client and admin
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
-app.use('/', express.static(path.join(__dirname, 'client')));
+app.use(express.static(path.join(__dirname, 'admin')));
 
 // Initialize data file
 async function initDataFile() {
