@@ -173,7 +173,9 @@ async function submitAppointment() {
     };
     
     try {
-        const response = await fetch('http://localhost:3000/api/appointments', {
+        const API_URL = 'https://autustrade-schedule.onrender.com';
+        
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(appointmentData)
