@@ -1,15 +1,20 @@
-# Autus Trades Admin Dashboard
+# Autus Trades Appointment System
 
-Admin dashboard for managing appointments with real-time synchronization.
+Complete appointment booking system with client booking interface and admin dashboard.
 
 ## Features
 
+### Client Side
+- Simple appointment booking form
+- Real-time submission to server
+- Email and phone validation
+
+### Admin Dashboard
 - Comprehensive appointment management
 - Real-time appointment updates with refresh button
-- Calendar view of appointments
-- Client management
-- Statistics and reporting
-- Responsive admin interface
+- Edit and delete appointments
+- Status management (Pending, Confirmed, Cancelled, Completed)
+- Statistics dashboard
 
 ## Tech Stack
 
@@ -22,15 +27,18 @@ Admin dashboard for managing appointments with real-time synchronization.
 ## Project Structure
 
 ```
-admin-dashboard/
+appointment-system/
 ├── server.js              # Backend API server
 ├── package.json           # Node.js dependencies
-├── appointments.json      # Data storage (auto-created)
-├── css/
-│   └── styles.css         # Admin styles
-├── js/
-│   └── app.js            # Admin JavaScript
-└── index.html             # Admin dashboard
+├── appointments.json      # Data storage
+├── client/                # Client booking interface
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
+└── admin/                 # Admin dashboard
+    ├── index.html
+    ├── css/styles.css
+    └── js/app.js
 ```
 
 ## Quick Start
@@ -49,7 +57,8 @@ npm start
 
 ### 3. Access the Application
 
-- **Admin Dashboard:** http://localhost:3000
+- **Client Booking:** http://localhost:3000
+- **Admin Dashboard:** http://localhost:3000/admin
 
 ## Key Features
 
