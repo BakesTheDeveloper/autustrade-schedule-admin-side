@@ -1,15 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/appointments/(.*)",
-      "dest": "/api/appointments.js"
-    }
+  "rewrites": [
+    { "source": "/", "destination": "/client/index.html" },
+    { "source": "/admin", "destination": "/admin/index.html" }
   ]
 }
